@@ -18,7 +18,7 @@ var config =  {
     min: '1900-01-01 00:00:00', //最小日期
     max: '2099-12-31 23:59:59', //最大日期
     isv: false,
-    init: true
+    init: false
 };
 
 var Dates = {}, doc = document, creat = 'createElement', byid = 'getElementById', tags = 'getElementsByTagName';
@@ -271,7 +271,27 @@ Dates.timeVoid = function(times, index){
 Dates.check = function(){
     var reg = Dates.options.format.replace(/YYYY|MM|DD|hh|mm|ss/g,'\\d+\\').replace(/\\$/g, '');
     var exp = new RegExp(reg), value = Dates.elem[as.elemv];
-    var arr = value.match(/\d+/g) || [], isvoid = Dates.checkVoid(arr[0], arr[1], arr[2]);
+    var arr = value.match(/\d+/g) || [];
+	switch(Dates.options.format){
+		case 'YYYY':
+			if(arr.length >= 1)
+				arr = [arr[0],'01','01','00','00','00'];
+			break;
+		case 'YYYY-MM':
+			if(arr.length >= 2)
+				arr = [arr[0],arr[1],'01','00','00','00'];
+			break;
+		case 'YYYY-MM-DD':					
+			break;
+		case 'YYYY-MM-DD hh:mm:ss':					
+			break;
+		case 'hh:mm:ss':
+			if(arr.length >= 3)
+				arr = ['2017','01','01',arr[0],arr[1],arr[2]];
+			break;
+	}
+	var	isvoid = Dates.checkVoid(arr[0], arr[1], arr[2]);
+	
     if(value.replace(/\s/g, '') !== ''){
         if(!exp.test(value)){
             Dates.elem[as.elemv] = '';
@@ -283,7 +303,6 @@ Dates.check = function(){
             return 1;
         } else {
             isvoid.value = Dates.elem[as.elemv].match(exp).join();
-            arr = isvoid.value.match(/\d+/g);
             if(arr[1] < 1){
                 arr[1] = 1;
                 isvoid.auto = 1;
@@ -487,7 +506,37 @@ Dates.initDate = function(format){
     var S = Dates.query, log = {}, De = new Date();
     var ymd = Dates.elem[as.elemv].match(/\d+/g) || [];
     var elemIndexMap = Dates.getEachElementIndex(format);
+	elemIndexMap={
+		year:0,
+		month:1,
+		day:2,
+		hour:3,
+		minute:4,
+		second:5
+	};
     Dates.elemIndexMap = elemIndexMap;
+	
+	switch(Dates.options.format){
+		case 'YYYY':
+			if(ymd.length>=1)
+				ymd = [ymd[0],'01','01','00','00','00'];
+			break;
+		case 'YYYY-MM':
+			if(ymd.length>=2)
+				ymd = [ymd[0],ymd[1],'01','00','00','00'];
+			break;
+		case 'YYYY-MM-DD':
+			if(ymd.length>=3)
+				ymd = [ymd[0],ymd[1],ymd[2],'00','00','00'];
+			break;
+		case 'YYYY-MM-DD hh:mm:ss':					
+			break;
+		case 'hh:mm:ss':
+			if(ymd.length>=3)
+				ymd = ['2017','01','01',ymd[0],ymd[1],ymd[2]];
+			break;
+	}
+			
     if(ymd.length < 3){
         ymd = Dates.options.start.match(/\d+/g) || [];
         if(ymd.length < 3){
@@ -501,9 +550,41 @@ Dates.initDate = function(format){
 //是否显示零件
 Dates.iswrite = function(){
     var S = Dates.query, log = {
+		date: S('#laydate_date'),
+		year: S('#laydate_YY'),
+		month: S('#laydate_MM'),
+		day: S('#laydate_table'),
         time: S('#laydate_hms')
     };
-    Dates.shde(log.time, !Dates.options.istime);
+	Dates.shde(log.date, false);
+	Dates.shde(log.year, true);
+	Dates.shde(log.month, true);
+	Dates.shde(log.day, true);
+    Dates.shde(log.time, true);
+	switch(Dates.options.format){
+		case 'YYYY':
+			Dates.shde(log.year, false);
+			break;
+		case 'YYYY-MM':
+			Dates.shde(log.year, false);
+			Dates.shde(log.month, false);
+			break;
+		case 'YYYY-MM-DD':
+			Dates.shde(log.year, false);
+			Dates.shde(log.month, false);
+			Dates.shde(log.day, false);
+			break;
+		case 'YYYY-MM-DD hh:mm:ss':
+			Dates.shde(log.year, false);
+			Dates.shde(log.month, false);
+			Dates.shde(log.day, false);
+			Dates.shde(log.time, false);
+			break;
+		case 'hh:mm:ss':
+			Dates.shde(log.date, true);
+			Dates.shde(log.time, false);
+			break;
+	}
     Dates.shde(as.oclear, !('isclear' in Dates.options ? Dates.options.isclear : 1));
     Dates.shde(as.otoday, !('istoday' in Dates.options ? Dates.options.istoday : 1));
     Dates.shde(as.ok, !('issure' in Dates.options ? Dates.options.issure : 1));
@@ -580,7 +661,7 @@ Dates.view = function(elem, options){
         div.style.cssText = 'position: absolute;';
         div.setAttribute('name', 'laydate-v'+ laydate.v);
         
-        div.innerHTML =  log.html = '<div class="laydate_top">'
+        div.innerHTML =  log.html = '<div id="laydate_date" class="laydate_top">'
           +'<div class="laydate_ym laydate_y" id="laydate_YY">'
             +'<a class="laydate_choose laydate_chprev laydate_tab"><cite></cite></a>'
             +'<input id="laydate_y" readonly><label></label>'
@@ -617,7 +698,7 @@ Dates.view = function(elem, options){
           +'<div class="laydate_time" id="laydate_time"></div>'
           +'<div class="laydate_btn">'
             +'<a id="laydate_clear">清空</a>'
-            +'<a id="laydate_today">今天</a>'
+            +'<a id="laydate_today">现在</a>'
             +'<a id="laydate_ok">确认</a>'
           +'</div>'
           +(config.isv ? '<a href="http://sentsin.com/layui/laydate/" class="laydate_v" target="_blank">laydate-v'+ laydate.v +'</a>' : '')
